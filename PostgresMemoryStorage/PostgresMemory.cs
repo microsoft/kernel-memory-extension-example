@@ -72,6 +72,19 @@ public class PostgresMemory : IVectorDb
         bool withEmbeddings = false,
         CancellationToken cancellationToken = default)
     {
+        if (filters != null)
+        {
+            foreach (MemoryFilter filter in filters)
+            {
+                if (filter is PostgresMemoryFilter extendedFilter)
+                {
+                    // use PostgresMemoryFilter filtering logic
+                }
+
+                // use MemoryFilter filtering logic
+            }
+        }
+
         throw new NotImplementedException();
     }
 
@@ -83,6 +96,19 @@ public class PostgresMemory : IVectorDb
         bool withEmbeddings = false,
         CancellationToken cancellationToken = default)
     {
+        if (filters != null)
+        {
+            foreach (MemoryFilter filter in filters)
+            {
+                if (filter is PostgresMemoryFilter extendedFilter)
+                {
+                    // use PostgresMemoryFilter filtering logic
+                }
+
+                // use MemoryFilter filtering logic
+            }
+        }
+
         throw new NotImplementedException();
     }
 
