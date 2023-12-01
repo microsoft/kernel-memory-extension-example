@@ -7,26 +7,37 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.Diagnostics;
 using Microsoft.KernelMemory.MemoryStorage;
+using Microsoft.SemanticKernel.AI.Embeddings;
 
 namespace Microsoft.KernelMemory.Postgres;
 
 /// <summary>
 /// Postgres connector for Kernel Memory.
 /// </summary>
-public class PostgresMemory : IVectorDb
+public class PostgresMemory : IMemoryDb
 {
     private readonly ILogger<PostgresMemory> _log;
+    private readonly ITextEmbeddingGeneration _embeddingGenerator;
 
     /// <summary>
     /// Create a new instance of Postgres KM connector
     /// </summary>
     /// <param name="config">Postgres configuration</param>
+    /// <param name="embeddingGenerator">Text embedding generator</param>
     /// <param name="log">Application logger</param>
     public PostgresMemory(
         PostgresConfig config,
+        ITextEmbeddingGeneration embeddingGenerator,
         ILogger<PostgresMemory>? log = null)
     {
         this._log = log ?? DefaultLogger<PostgresMemory>.Instance;
+
+        this._embeddingGenerator = embeddingGenerator;
+
+        if (this._embeddingGenerator == null)
+        {
+            throw new PostgresException("Embedding generator not configured");
+        }
     }
 
     /// <inheritdoc />
@@ -65,12 +76,12 @@ public class PostgresMemory : IVectorDb
     /// <inheritdoc />
     public IAsyncEnumerable<(MemoryRecord, double)> GetSimilarListAsync(
         string index,
-        Embedding embedding,
+        string text,
         ICollection<MemoryFilter>? filters = null,
         double minRelevance = 0,
         int limit = 1,
         bool withEmbeddings = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = new CancellationToken())
     {
         if (filters != null)
         {

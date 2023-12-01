@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Microsoft.KernelMemory.Abstractions" Version="0.12.231122.1-preview " />
+    <PackageVersion Include="Microsoft.KernelMemory.Abstractions" Version="0.15.231130.2-preview" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
   </ItemGroup>
   <!-- Sources -->

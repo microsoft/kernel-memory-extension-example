@@ -47,7 +47,7 @@ public static partial class DependencyInjection
     {
         return services
             .AddSingleton<PostgresConfig>(config)
-            .AddSingleton<IVectorDb, PostgresMemory>();
+            .AddSingleton<IMemoryDb, PostgresMemory>();
     }
 
     /// <summary>
