@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.KernelMemory.AI;
 using Microsoft.KernelMemory.Diagnostics;
 using Microsoft.KernelMemory.MemoryStorage;
-using Microsoft.SemanticKernel.AI.Embeddings;
 
 namespace Microsoft.KernelMemory.Postgres;
 
@@ -17,7 +17,7 @@ namespace Microsoft.KernelMemory.Postgres;
 public class PostgresMemory : IMemoryDb
 {
     private readonly ILogger<PostgresMemory> _log;
-    private readonly ITextEmbeddingGeneration _embeddingGenerator;
+    private readonly ITextEmbeddingGenerator _embeddingGenerator;
 
     /// <summary>
     /// Create a new instance of Postgres KM connector
@@ -27,7 +27,7 @@ public class PostgresMemory : IMemoryDb
     /// <param name="log">Application logger</param>
     public PostgresMemory(
         PostgresConfig config,
-        ITextEmbeddingGeneration embeddingGenerator,
+        ITextEmbeddingGenerator embeddingGenerator,
         ILogger<PostgresMemory>? log = null)
     {
         this._log = log ?? DefaultLogger<PostgresMemory>.Instance;
