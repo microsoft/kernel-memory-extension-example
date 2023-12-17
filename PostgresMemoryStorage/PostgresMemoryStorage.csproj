@@ -14,6 +14,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.KernelMemory.Abstractions" />
+        <PackageReference Include="Pgvector" />
     </ItemGroup>
 
     <Import Project="../code-analysis.props" />

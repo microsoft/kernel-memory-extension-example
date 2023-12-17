@@ -15,7 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.KernelMemory.Core" Version="0.18.231207.2-preview" />
+        <PackageReference Include="Microsoft.KernelMemory.Core" Version="0.22.231215.1" />
     </ItemGroup>
 
     <ItemGroup>

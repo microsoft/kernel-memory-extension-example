@@ -3,8 +3,9 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Microsoft.KernelMemory.Abstractions" Version="0.18.231207.2-preview" />
+    <PackageVersion Include="Microsoft.KernelMemory.Abstractions" Version="0.22.231215.1" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageVersion Include="Pgvector" Version="0.2.0" />
   </ItemGroup>
   <!-- Sources -->
   <ItemGroup>
