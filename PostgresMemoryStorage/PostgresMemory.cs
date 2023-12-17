@@ -2,22 +2,25 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.AI;
 using Microsoft.KernelMemory.Diagnostics;
 using Microsoft.KernelMemory.MemoryStorage;
+using Pgvector;
 
 namespace Microsoft.KernelMemory.Postgres;
 
 /// <summary>
 /// Postgres connector for Kernel Memory.
 /// </summary>
-public class PostgresMemory : IMemoryDb
+public class PostgresMemory : IMemoryDb, IDisposable
 {
     private readonly ILogger<PostgresMemory> _log;
     private readonly ITextEmbeddingGenerator _embeddingGenerator;
+    private readonly PostgresDbClient _db;
 
     /// <summary>
     /// Create a new instance of Postgres KM connector
@@ -33,27 +36,42 @@ public class PostgresMemory : IMemoryDb
         this._log = log ?? DefaultLogger<PostgresMemory>.Instance;
 
         this._embeddingGenerator = embeddingGenerator;
-
         if (this._embeddingGenerator == null)
         {
             throw new PostgresException("Embedding generator not configured");
         }
+
+        this._db = new PostgresDbClient(config.ConnString, config.Schema);
     }
 
     /// <inheritdoc />
-    public Task CreateIndexAsync(
+    public async Task CreateIndexAsync(
         string index,
         int vectorSize,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        index = NormalizeIndexName(index);
+
+        if (await this._db.DoesTableExistsAsync(index, cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        await this._db.CreateTableAsync(index, vectorSize, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public Task<IEnumerable<string>> GetIndexesAsync(
+    public async Task<IEnumerable<string>> GetIndexesAsync(
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var result = new List<string>();
+        var tables = this._db.GetTablesAsync(cancellationToken).ConfigureAwait(false);
+        await foreach (string name in tables)
+        {
+            result.Add(name);
+        }
+
+        return result;
     }
 
     /// <inheritdoc />
@@ -61,16 +79,30 @@ public class PostgresMemory : IMemoryDb
         string index,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        index = NormalizeIndexName(index);
+
+        return this._db.DeleteTableAsync(index, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<string> UpsertAsync(
+    public async Task<string> UpsertAsync(
         string index,
         MemoryRecord record,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        index = NormalizeIndexName(index);
+
+        await this._db.UpsertAsync(
+            tableName: index,
+            id: record.Id,
+            embedding: new Vector(record.Vector.Data),
+            tags: PostgresSchema.GetTags(record),
+            content: PostgresSchema.GetContent(record),
+            payload: JsonSerializer.Serialize(PostgresSchema.GetPayload(record)),
+            lastUpdate: DateTimeOffset.UtcNow,
+            cancellationToken).ConfigureAwait(false);
+
+        return record.Id;
     }
 
     /// <inheritdoc />
@@ -83,6 +115,8 @@ public class PostgresMemory : IMemoryDb
         bool withEmbeddings = false,
         CancellationToken cancellationToken = new CancellationToken())
     {
+        index = NormalizeIndexName(index);
+
         if (filters != null)
         {
             foreach (MemoryFilter filter in filters)
@@ -107,6 +141,8 @@ public class PostgresMemory : IMemoryDb
         bool withEmbeddings = false,
         CancellationToken cancellationToken = default)
     {
+        index = NormalizeIndexName(index);
+
         if (filters != null)
         {
             foreach (MemoryFilter filter in filters)
@@ -129,6 +165,42 @@ public class PostgresMemory : IMemoryDb
         MemoryRecord record,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        index = NormalizeIndexName(index);
+
+        return this._db.DeleteAsync(tableName: index, id: record.Id, cancellationToken);
     }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        this.Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Disposes the managed resources.
+    /// </summary>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            (this._db as IDisposable)?.Dispose();
+        }
+    }
+
+    #region private ================================================================================
+
+    private static string NormalizeIndexName(string index)
+    {
+        PostgresSchema.ValidateTableName(index);
+
+        if (string.IsNullOrWhiteSpace(index))
+        {
+            index = Constants.DefaultIndex;
+        }
+
+        return index.Trim();
+    }
+
+    #endregion
 }

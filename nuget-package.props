@@ -7,7 +7,7 @@
         <Authors>Microsoft</Authors>
         <Company>Microsoft</Company>
         <Product>Kernel Memory adapter for Postgres</Product>
-        <Description>Postgres connector for Microsoft Kernel Memory, to store and search memory using Postgres vector indexing and Postgres features.</Description>
+        <Description>Postgres(with pgvector extension) connector for Microsoft Kernel Memory, to store and search memory using Postgres vector indexing and Postgres features.</Description>
         <PackageTags>Copilot, Memory, RAG, Kernel Memory, Postgres, AI, Artificial Intelligence, Embeddings, Vector DB, Vector Search, ETL</PackageTags>
         <PackageId>$(AssemblyName)</PackageId>
 
