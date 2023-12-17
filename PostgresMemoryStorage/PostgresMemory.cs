@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,7 +42,7 @@ public class PostgresMemory : IMemoryDb, IDisposable
             throw new PostgresException("Embedding generator not configured");
         }
 
-        this._db = new PostgresDbClient(config.ConnString, config.Schema);
+        this._db = new PostgresDbClient(config.ConnectionString, config.Schema);
     }
 
     /// <inheritdoc />
@@ -65,7 +66,7 @@ public class PostgresMemory : IMemoryDb, IDisposable
         CancellationToken cancellationToken = default)
     {
         var result = new List<string>();
-        var tables = this._db.GetTablesAsync(cancellationToken).ConfigureAwait(false);
+        var tables = this._db.GetIndexTablesAsync(cancellationToken).ConfigureAwait(false);
         await foreach (string name in tables)
         {
             result.Add(name);
@@ -75,13 +76,19 @@ public class PostgresMemory : IMemoryDb, IDisposable
     }
 
     /// <inheritdoc />
-    public Task DeleteIndexAsync(
+    public async Task DeleteIndexAsync(
         string index,
         CancellationToken cancellationToken = default)
     {
         index = NormalizeIndexName(index);
 
-        return this._db.DeleteTableAsync(index, cancellationToken);
+        // GetIndexes filters out tables that are not indexes
+        // to avoid deleting a table used for something else.
+        var list = await this.GetIndexesAsync(cancellationToken).ConfigureAwait(false);
+        if (list.Contains(index, StringComparer.OrdinalIgnoreCase))
+        {
+            await this._db.DeleteTableAsync(index, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <inheritdoc />
