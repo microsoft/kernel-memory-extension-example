@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.Postgres;
 
@@ -7,27 +8,58 @@ namespace TestApplication;
 
 internal class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
+        var postgresConfig = new PostgresConfig();
+        var azureOpenAIEmbeddingConfig = new AzureOpenAIConfig();
+        var azureOpenAITextConfig = new AzureOpenAIConfig();
+
+        new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .AddJsonFile("appsettings.Development.json", optional: true)
+            .Build()
+            .BindSection("KernelMemory:Services:Postgres", postgresConfig)
+            .BindSection("KernelMemory:Services:AzureOpenAIEmbedding", azureOpenAIEmbeddingConfig)
+            .BindSection("KernelMemory:Services:AzureOpenAIText", azureOpenAITextConfig);
+
         // Concatenate our 'WithPostgres()' after 'WithOpenAIDefaults()' from the core nuget
-        var test1 = new KernelMemoryBuilder()
-            .WithOpenAIDefaults("api key")
-            .WithPostgres("conn string")
+        var mem1 = new KernelMemoryBuilder()
+            .WithAzureOpenAITextGeneration(azureOpenAITextConfig)
+            .WithAzureOpenAITextEmbeddingGeneration(azureOpenAIEmbeddingConfig)
+            .WithPostgres(postgresConfig)
             .Build();
 
         // Concatenate our 'WithPostgres()' before 'WithOpenAIDefaults()' from the core nuget
-        var test2 = new KernelMemoryBuilder()
-            .WithPostgres("conn string")
-            .WithOpenAIDefaults("api key")
+        var mem2 = new KernelMemoryBuilder()
+            .WithPostgres(postgresConfig)
+            .WithAzureOpenAITextGeneration(azureOpenAITextConfig)
+            .WithAzureOpenAITextEmbeddingGeneration(azureOpenAIEmbeddingConfig)
             .Build();
 
         // Concatenate our 'WithPostgres()' before and after KM builder extension methods from the core nuget
-        var test3 = new KernelMemoryBuilder()
+        var mem3 = new KernelMemoryBuilder()
             .WithSimpleFileStorage()
-            .WithPostgres("conn string")
-            .WithOpenAIDefaults("api key")
+            .WithAzureOpenAITextGeneration(azureOpenAITextConfig)
+            .WithPostgres(postgresConfig)
+            .WithAzureOpenAITextEmbeddingGeneration(azureOpenAIEmbeddingConfig)
             .Build();
 
-        Console.WriteLine("Test complete");
+        await mem1.DeleteIndexAsync("index1");
+        await mem2.DeleteIndexAsync("index2");
+        await mem3.DeleteIndexAsync("index3");
+
+        await mem1.ImportTextAsync("this is a test 1", index: "index1");
+        await mem1.ImportTextAsync("this is a test 2", index: "index2");
+        await mem1.ImportTextAsync("this is a test 3", index: "index3");
+
+        foreach (var s in await mem1.ListIndexesAsync())
+        {
+            Console.WriteLine(s.Name);
+        }
+
+        await mem1.DeleteIndexAsync("index2");
+        await mem3.DeleteIndexAsync("index3");
+
+        Console.WriteLine("\n=== Test complete ===");
     }
 }

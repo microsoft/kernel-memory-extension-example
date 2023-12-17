@@ -19,6 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "root", "root", "{6EF76FD8-4
 		code-analysis.props = code-analysis.props
 		nuget-package.props = nuget-package.props
 		NUGET.md = NUGET.md
+		build.sh = build.sh
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostgresMemoryStorage", "PostgresMemoryStorage\PostgresMemoryStorage.csproj", "{239A6E9B-614F-4A17-9DBA-DAB54F89C703}"

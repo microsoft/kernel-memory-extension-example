@@ -17,7 +17,7 @@ public static partial class KernelMemoryBuilderExtensions
     /// <param name="config">Postgres configuration</param>
     public static IKernelMemoryBuilder WithPostgres(this IKernelMemoryBuilder builder, PostgresConfig config)
     {
-        builder.Services.AddPostgresAsVectorDb(config);
+        builder.Services.AddPostgresAsMemoryDb(config);
         return builder;
     }
 
@@ -28,7 +28,7 @@ public static partial class KernelMemoryBuilderExtensions
     /// <param name="connString">Postgres connection string</param>
     public static IKernelMemoryBuilder WithPostgres(this IKernelMemoryBuilder builder, string connString)
     {
-        builder.Services.AddPostgresAsVectorDb(connString);
+        builder.Services.AddPostgresAsMemoryDb(connString);
         return builder;
     }
 }
@@ -39,11 +39,11 @@ public static partial class KernelMemoryBuilderExtensions
 public static partial class DependencyInjection
 {
     /// <summary>
-    /// Inject Postgres as the default implementation of IVectorDb
+    /// Inject Postgres as the default implementation of IMemoryDb
     /// </summary>
     /// <param name="services">Service collection</param>
     /// <param name="config">Postgres configuration</param>
-    public static IServiceCollection AddPostgresAsVectorDb(this IServiceCollection services, PostgresConfig config)
+    public static IServiceCollection AddPostgresAsMemoryDb(this IServiceCollection services, PostgresConfig config)
     {
         return services
             .AddSingleton<PostgresConfig>(config)
@@ -51,13 +51,13 @@ public static partial class DependencyInjection
     }
 
     /// <summary>
-    /// Inject Postgres as the default implementation of IVectorDb
+    /// Inject Postgres as the default implementation of IMemoryDb
     /// </summary>
     /// <param name="services">Service collection</param>
     /// <param name="connString">Postgres connection string</param>
-    public static IServiceCollection AddPostgresAsVectorDb(this IServiceCollection services, string connString)
+    public static IServiceCollection AddPostgresAsMemoryDb(this IServiceCollection services, string connString)
     {
-        var config = new PostgresConfig { ConnString = connString };
-        return services.AddPostgresAsVectorDb(config);
+        var config = new PostgresConfig { ConnectionString = connString };
+        return services.AddPostgresAsMemoryDb(config);
     }
 }

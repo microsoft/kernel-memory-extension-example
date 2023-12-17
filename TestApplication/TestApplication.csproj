@@ -7,6 +7,7 @@
         <Nullable>enable</Nullable>
         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
         <NoWarn>CA1303,CA1852</NoWarn>
+        <RestoreNoCache>true</RestoreNoCache>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,14 +15,25 @@
         <PackageReference Include="Microsoft.KernelMemory.Postgres" Version="0.1.0"/>
     </ItemGroup>
 
+<!--    <ItemGroup>-->
+<!--        <ProjectReference Include="..\PostgresMemoryStorage\PostgresMemoryStorage.csproj"/>-->
+<!--    </ItemGroup>-->
+
     <ItemGroup>
-        <PackageReference Include="Microsoft.KernelMemory.Core" Version="0.22.231215.1" />
+        <PackageReference Include="Microsoft.KernelMemory.Core" Version="0.22.231216.1" />
     </ItemGroup>
 
     <ItemGroup>
         <None Remove="appsettings.json"/>
         <Content Include="appsettings.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <None Remove="appsettings.development.json"/>
+        <Content Include="appsettings.development.json" Condition="Exists('appsettings.development.json')">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Update="appsettings.development.json">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
 
