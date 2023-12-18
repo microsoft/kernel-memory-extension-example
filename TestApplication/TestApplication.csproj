@@ -28,12 +28,15 @@
         <Content Include="appsettings.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
+
+        <None Remove="appsettings.customsql.json"/>
+        <Content Include="appsettings.customsql.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+
         <None Remove="appsettings.development.json"/>
         <Content Include="appsettings.development.json" Condition="Exists('appsettings.development.json')">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <Content Update="appsettings.development.json">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
 

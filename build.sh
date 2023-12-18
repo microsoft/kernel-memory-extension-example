@@ -30,8 +30,9 @@ fi
 # Clear the cache
 echo "---- Clearing the cache"
 if [ -d "${HOME}/.nuget/packages/${PACKAGE}" ]; then
-    echo "Cache content before purge:"
-    ls -la "${HOME}/.nuget/packages/${PACKAGE}"
+    echo "Cache content before purge"
+    echo "dir: ~/.nuget/packages/${PACKAGE}"
+    ls -1F "${HOME}/.nuget/packages/${PACKAGE}"
     rm -fR "${HOME}/.nuget/packages/${PACKAGE}"
     if [ -d "${HOME}/.nuget/packages/${PACKAGE}" ]; then
         echo "ERROR: unable to clear cache at ${HOME}/.nuget/packages/${PACKAGE}"
