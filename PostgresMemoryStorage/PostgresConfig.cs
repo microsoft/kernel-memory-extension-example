@@ -123,6 +123,11 @@ public class PostgresConfig
             throw new ConfigurationException("The connection string is empty.");
         }
 
+        if (string.IsNullOrWhiteSpace(this.TableNamePrefix))
+        {
+            throw new ConfigurationException("The table name prefix is empty.");
+        }
+
         if (!this.Columns.TryGetValue(ColumnId, out var columnName))
         {
             throw new ConfigurationException("The name of the Id column is not defined.");

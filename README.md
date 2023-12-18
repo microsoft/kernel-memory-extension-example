@@ -52,30 +52,43 @@ To use Postgres with Kernel Memory:
 
 ## Neighbor search indexes, quality and performance
 
-The connector does not create IVFFlat or HNSW indexes on Postgres tables, and uses exact nearest neighbor search.
+The connector does not create IVFFlat or HNSW indexes on Postgres tables, and
+uses exact nearest neighbor search.
 
-Depending on your scenario you might want to create these indexes manually, considering precision and performance
-trade-offs. We welcome PRs to make this aspect configurable.
+Depending on your scenario you might want to create these indexes manually,
+considering precision and performance trade-offs, or you can customize the
+SQL used to create tables via configuration.
 
-> An **IVFFlat** index divides vectors into lists, and then searches a subset of those lists that are closest to the
-> query vector. It has **faster build times** and uses **less memory** than HNSW, but has **lower query performance**
+> An **IVFFlat** index divides vectors into lists, and then searches a subset
+> of those lists that are closest to the query vector. It has **faster build times**
+> and uses **less memory** than HNSW, but has **lower query performance**
 > (in terms of speed-recall tradeoff).
 
-> An **HNSW** index creates a multilayer graph. It has **slower build times** and uses **more memory** than IVFFlat,
-> but has **better query performance** (in terms of speed-recall tradeoff). There’s no training step like IVFFlat, so
-> the index can be created without any data in the table.
+> An **HNSW** index creates a multilayer graph. It has **slower build times**
+> and uses **more memory** than IVFFlat, but has **better query performance**
+> (in terms of speed-recall tradeoff). There’s no training step like IVFFlat,
+> so the index can be created without any data in the table.
 
 See https://github.com/pgvector/pgvector for more information.
 
 ## Memory Indexes and Postgres tables
 
-The Postgres memory connector will create "memory indexes" automatically, one DB table for each memory index.
+The Postgres memory connector will create "memory indexes" automatically, one
+DB table for each memory index.
 
-Tables have one hard coded **comment** attached, used to filter out other tables that might be present.
-Tables without such comment are ignored when **Listing Tables** (Memory Index List) and when **Deleting Tables**
-(Delete Memory Index), to avoid leaking extraneous tables, or deleting them.
+Table names have a configurable **prefix**, used to filter out other tables that
+might be present. The prefix is mandatory, cannot be empty, we suggest using
+the default `km_` prefix.
 
-However, Insert and Update operations do not check for such comment, so there's a small risk of attempting to read
-records or write records into extraneous tables in the DB, which would most likely result in errors.
+Overall we recommend not mixing external tables in the same DB used for
+Kernel Memory.
 
-Overall we recommend not mixing external tables in the same DB used for Kernel Memory.
+## Column names and table schema
+
+The connector uses a default schema with predefined columns and indexes.
+
+You can change the field names, and if you need to add additional columns
+or indexes, you can also customize the `CREATE TABLE` SQL statement. You
+can use this approach, for example, to use IVFFlat or HNSW.
+
+See `PostgresConfig` class for details.
