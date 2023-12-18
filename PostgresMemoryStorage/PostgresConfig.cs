@@ -15,7 +15,7 @@ public class PostgresConfig
     /// <summary>
     /// Connection string required to connect to Postgres
     /// </summary>
-    public string ConnString { get; set; } = string.Empty;
+    public string ConnectionString { get; set; } = string.Empty;
 
     /// <summary>
     /// Name of the schema where to read and write records.
