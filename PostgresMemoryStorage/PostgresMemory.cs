@@ -2,13 +2,16 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.AI;
 using Microsoft.KernelMemory.Diagnostics;
 using Microsoft.KernelMemory.MemoryStorage;
+using Microsoft.KernelMemory.Postgres.Db;
 using Pgvector;
 
 namespace Microsoft.KernelMemory.Postgres;
@@ -41,7 +44,6 @@ public class PostgresMemory : IMemoryDb, IDisposable
             throw new PostgresException("Embedding generator not configured");
         }
 
-        config.Validate();
         this._db = new PostgresDbClient(config);
     }
 
@@ -94,11 +96,7 @@ public class PostgresMemory : IMemoryDb, IDisposable
 
         await this._db.UpsertAsync(
             tableName: index,
-            id: record.Id,
-            embedding: new Vector(record.Vector.Data),
-            tags: PostgresSchema.GetTags(record),
-            content: PostgresSchema.GetContent(record),
-            payload: JsonSerializer.Serialize(PostgresSchema.GetPayload(record)),
+            PostgresMemoryRecord.FromMemoryRecord(record),
             lastUpdate: DateTimeOffset.UtcNow,
             cancellationToken).ConfigureAwait(false);
 
@@ -106,57 +104,61 @@ public class PostgresMemory : IMemoryDb, IDisposable
     }
 
     /// <inheritdoc />
-    public IAsyncEnumerable<(MemoryRecord, double)> GetSimilarListAsync(
+    public async IAsyncEnumerable<(MemoryRecord, double)> GetSimilarListAsync(
         string index,
         string text,
         ICollection<MemoryFilter>? filters = null,
         double minRelevance = 0,
         int limit = 1,
         bool withEmbeddings = false,
-        CancellationToken cancellationToken = new CancellationToken())
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         index = NormalizeIndexName(index);
 
-        if (filters != null)
+        var (sql, unsafeSqlUserValues) = this.PrepareSql(filters);
+
+        Embedding textEmbedding = await this._embeddingGenerator.GenerateEmbeddingAsync(text, cancellationToken).ConfigureAwait(false);
+
+        var records = this._db.GetSimilarAsync(
+            index,
+            target: new Vector(textEmbedding.Data),
+            minSimilarity: minRelevance,
+            filterSql: sql,
+            sqlUserValues: unsafeSqlUserValues,
+            limit: limit,
+            withEmbeddings: withEmbeddings,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        await foreach ((PostgresMemoryRecord record, double similarity) result in records)
         {
-            foreach (MemoryFilter filter in filters)
-            {
-                if (filter is PostgresMemoryFilter extendedFilter)
-                {
-                    // use PostgresMemoryFilter filtering logic
-                }
-
-                // use MemoryFilter filtering logic
-            }
+            yield return (PostgresMemoryRecord.ToMemoryRecord(result.record), result.similarity);
         }
-
-        throw new NotImplementedException("GetSimilarListAsync NOT READY");
     }
 
     /// <inheritdoc />
-    public IAsyncEnumerable<MemoryRecord> GetListAsync(
+    public async IAsyncEnumerable<MemoryRecord> GetListAsync(
         string index,
         ICollection<MemoryFilter>? filters = null,
         int limit = 1,
         bool withEmbeddings = false,
-        CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         index = NormalizeIndexName(index);
 
-        if (filters != null)
+        var (sql, unsafeSqlUserValues) = this.PrepareSql(filters);
+
+        var records = this._db.GetListAsync(
+            index,
+            filterSql: sql,
+            sqlUserValues: unsafeSqlUserValues,
+            limit: limit,
+            withEmbeddings: withEmbeddings,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        await foreach (PostgresMemoryRecord pgRecord in records)
         {
-            foreach (MemoryFilter filter in filters)
-            {
-                if (filter is PostgresMemoryFilter extendedFilter)
-                {
-                    // use PostgresMemoryFilter filtering logic
-                }
-
-                // use MemoryFilter filtering logic
-            }
+            yield return PostgresMemoryRecord.ToMemoryRecord(pgRecord);
         }
-
-        throw new NotImplementedException("GetListAsync NOT READY");
     }
 
     /// <inheritdoc />
@@ -200,6 +202,58 @@ public class PostgresMemory : IMemoryDb, IDisposable
         }
 
         return index.Trim();
+    }
+
+    private (string sql, Dictionary<string, object> unsafeSqlUserValues) PrepareSql(
+        ICollection<MemoryFilter>? filters = null)
+    {
+        var sql = "";
+        Dictionary<string, object> unsafeSqlUserValues = new();
+
+        if (filters is not { Count: > 0 })
+        {
+            return (sql, unsafeSqlUserValues);
+        }
+
+        var tagCounter = 0;
+        var orConditions = new List<string>();
+
+        foreach (MemoryFilter filter in filters.Where(f => !f.IsEmpty()))
+        {
+            var andSql = new StringBuilder();
+            andSql.AppendLine("(");
+
+            if (filter is PostgresMemoryFilter extendedFilter)
+            {
+                // use PostgresMemoryFilter filtering logic
+                throw new NotImplementedException("PostgresMemoryFilter is not supported yet");
+            }
+
+            List<string> requiredTags = filter.GetFilters().Select(x => $"{x.Key}{Constants.ReservedEqualsChar}{x.Value}").ToList();
+            List<string> safeSqlPlaceholders = new();
+            if (requiredTags.Count > 0)
+            {
+                var safeSqlPlaceholder = $"@placeholder{tagCounter++}";
+                safeSqlPlaceholders.Add(safeSqlPlaceholder);
+                unsafeSqlUserValues[safeSqlPlaceholder] = requiredTags;
+
+                // All tags are required
+                //  tags @> ARRAY['user:001', 'type:news', '__document_id:b405']::text[]  <== all tags are required <=== we are using this
+                //  tags && ARRAY['user:001', 'type:news', '__document_id:b405']::text[]  <== one tag is sufficient
+                // Available syntax:
+                //  $"{PostgresSchema.PlaceholdersTags} @> " + safeSqlPlaceholder
+                //  $"{PostgresSchema.PlaceholdersTags} @> " + safeSqlPlaceholder + "::text[]"
+                //  $"{PostgresSchema.PlaceholdersTags} @> ARRAY[" + safeSqlPlaceholder + "]::text[]"
+                andSql.AppendLine($"{PostgresSchema.PlaceholdersTags} @> " + safeSqlPlaceholder);
+            }
+
+            andSql.AppendLine(")");
+            orConditions.Add(andSql.ToString());
+        }
+
+        sql = string.Join(" OR ", orConditions);
+
+        return (sql, unsafeSqlUserValues);
     }
 
     #endregion
