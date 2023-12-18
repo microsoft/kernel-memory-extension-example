@@ -86,4 +86,11 @@ internal static class PostgresSchema
 
         throw new PostgresException("The table/index name contains invalid chars");
     }
+
+    public static void ValidateTableNamePrefix(string name)
+    {
+        if (s_tableNameRegex.IsMatch(name)) { return; }
+
+        throw new PostgresException("The table name prefix contains invalid chars");
+    }
 }

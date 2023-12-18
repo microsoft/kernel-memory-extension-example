@@ -48,18 +48,25 @@ internal class Program
         await mem2.DeleteIndexAsync("index2");
         await mem3.DeleteIndexAsync("index3");
 
-        await mem1.ImportTextAsync("this is a test 1", index: "index1");
-        await mem1.ImportTextAsync("this is a test 2", index: "index2");
-        await mem1.ImportTextAsync("this is a test 3", index: "index3");
+        var doc1 = await mem1.ImportTextAsync("this is a test 1", index: "index1");
+        var doc2 = await mem2.ImportTextAsync("this is a test 2", index: "index2");
+        var doc3 = await mem3.ImportTextAsync("this is a test 3", index: "index3");
+
+        Console.WriteLine("\nInsert done. Press ENTER to list indexes...");
+        Console.ReadLine();
 
         foreach (var s in await mem1.ListIndexesAsync())
         {
             Console.WriteLine(s.Name);
         }
 
-        await mem1.DeleteIndexAsync("index2");
+        Console.WriteLine("\nDelete done. Press ENTER to delete indexes...");
+        Console.ReadLine();
+
+        await mem1.DeleteIndexAsync("index1");
+        await mem2.DeleteIndexAsync("index2");
         await mem3.DeleteIndexAsync("index3");
 
-        Console.WriteLine("\n=== Test complete ===");
+        Console.WriteLine("\n=== end ===");
     }
 }

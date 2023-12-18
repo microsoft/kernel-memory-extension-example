@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,7 +41,8 @@ public class PostgresMemory : IMemoryDb, IDisposable
             throw new PostgresException("Embedding generator not configured");
         }
 
-        this._db = new PostgresDbClient(config.ConnectionString, config.Schema);
+        config.Validate();
+        this._db = new PostgresDbClient(config);
     }
 
     /// <inheritdoc />
@@ -66,7 +66,7 @@ public class PostgresMemory : IMemoryDb, IDisposable
         CancellationToken cancellationToken = default)
     {
         var result = new List<string>();
-        var tables = this._db.GetIndexTablesAsync(cancellationToken).ConfigureAwait(false);
+        var tables = this._db.GetTablesAsync(cancellationToken).ConfigureAwait(false);
         await foreach (string name in tables)
         {
             result.Add(name);
@@ -81,14 +81,7 @@ public class PostgresMemory : IMemoryDb, IDisposable
         CancellationToken cancellationToken = default)
     {
         index = NormalizeIndexName(index);
-
-        // GetIndexes filters out tables that are not indexes
-        // to avoid deleting a table used for something else.
-        var list = await this.GetIndexesAsync(cancellationToken).ConfigureAwait(false);
-        if (list.Contains(index, StringComparer.OrdinalIgnoreCase))
-        {
-            await this._db.DeleteTableAsync(index, cancellationToken).ConfigureAwait(false);
-        }
+        await this._db.DeleteTableAsync(index, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -137,7 +130,7 @@ public class PostgresMemory : IMemoryDb, IDisposable
             }
         }
 
-        throw new NotImplementedException();
+        throw new NotImplementedException("GetSimilarListAsync NOT READY");
     }
 
     /// <inheritdoc />
@@ -163,7 +156,7 @@ public class PostgresMemory : IMemoryDb, IDisposable
             }
         }
 
-        throw new NotImplementedException();
+        throw new NotImplementedException("GetListAsync NOT READY");
     }
 
     /// <inheritdoc />

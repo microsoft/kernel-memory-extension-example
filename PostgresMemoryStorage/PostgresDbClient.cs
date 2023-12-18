@@ -19,30 +19,36 @@ internal sealed class PostgresDbClient : IDisposable
     private readonly NpgsqlDataSource _dataSource;
 
     private readonly string _schema;
+    private readonly string _tableNamePrefix;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PostgresDbClient"/> class.
     /// </summary>
-    /// <param name="connString">Postgres connection string</param>
-    /// <param name="schema">Schema of collection tables.</param>
-    public PostgresDbClient(string connString, string schema)
+    /// <param name="config">Configuration</param>
+    public PostgresDbClient(PostgresConfig config)
     {
-        NpgsqlDataSourceBuilder dataSourceBuilder = new(connString);
+        NpgsqlDataSourceBuilder dataSourceBuilder = new(config.ConnectionString);
         dataSourceBuilder.UseVector();
         this._dataSource = dataSourceBuilder.Build();
-        this._schema = schema;
+        this._schema = config.Schema;
+        this._tableNamePrefix = config.TableNamePrefix;
 
-        PostgresSchema.ValidateSchemaName(schema);
+        PostgresSchema.ValidateSchemaName(this._schema);
+        PostgresSchema.ValidateTableNamePrefix(this._tableNamePrefix);
     }
 
     /// <summary>
     /// Check if a table exists.
     /// </summary>
     /// <param name="tableName">The name assigned to a table of entries.</param>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
+    /// <param name="cancellationToken">Async task cancellation token.</param>
     /// <returns>True if the table exists</returns>
-    public async Task<bool> DoesTableExistsAsync(string tableName, CancellationToken cancellationToken = default)
+    public async Task<bool> DoesTableExistsAsync(
+        string tableName,
+        CancellationToken cancellationToken = default)
     {
+        tableName = this.WithTableNamePrefix(tableName);
+
         NpgsqlConnection connection = await this._dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
         await using (connection)
@@ -56,6 +62,7 @@ internal sealed class PostgresDbClient : IDisposable
                     WHERE table_schema = @schema
                         AND table_name = @table
                         AND table_type = 'BASE TABLE'
+                LIMIT 1
             ";
 
             cmd.Parameters.AddWithValue("@schema", this._schema);
@@ -77,9 +84,14 @@ internal sealed class PostgresDbClient : IDisposable
     /// </summary>
     /// <param name="tableName">The name assigned to a table of entries.</param>
     /// <param name="vectorSize">Embedding vectors dimension</param>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
-    public async Task CreateTableAsync(string tableName, int vectorSize, CancellationToken cancellationToken = default)
+    /// <param name="cancellationToken">Async task cancellation token.</param>
+    public async Task CreateTableAsync(
+        string tableName,
+        int vectorSize,
+        CancellationToken cancellationToken = default)
     {
+        tableName = this.WithSchemaAndTableNamePrefix(tableName);
+
         NpgsqlConnection connection = await this._dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
         await using (connection)
@@ -88,8 +100,7 @@ internal sealed class PostgresDbClient : IDisposable
 
 #pragma warning disable CA2100 // SQL reviewed
             cmd.CommandText = $@"
-                BEGIN;
-                CREATE TABLE IF NOT EXISTS {this.GetFullTableName(tableName)} (
+                CREATE TABLE IF NOT EXISTS {tableName} (
                    {PostgresSchema.FieldsId} TEXT NOT NULL PRIMARY KEY,
                    {PostgresSchema.FieldsEmbedding} vector({vectorSize}),
                    {PostgresSchema.FieldsTags} TEXT[] DEFAULT '{{}}'::TEXT[] NOT NULL,
@@ -97,8 +108,7 @@ internal sealed class PostgresDbClient : IDisposable
                    {PostgresSchema.FieldsPayload} JSONB DEFAULT '{{}}'::JSONB NOT NULL,
                    {PostgresSchema.FieldsUpdatedAt} TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
                 );
-                COMMENT ON TABLE {this.GetFullTableName(tableName)} IS '{PostgresSchema.TableComment}';
-                COMMIT;";
+            ";
 #pragma warning restore CA2100
 
             await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -108,9 +118,10 @@ internal sealed class PostgresDbClient : IDisposable
     /// <summary>
     /// Get all tables.
     /// </summary>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
+    /// <param name="cancellationToken">Async task cancellation token.</param>
     /// <returns>A group of tables.</returns>
-    public async IAsyncEnumerable<string> GetIndexTablesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<string> GetTablesAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         NpgsqlConnection connection = await this._dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
@@ -118,25 +129,18 @@ internal sealed class PostgresDbClient : IDisposable
         {
             using NpgsqlCommand cmd = connection.CreateCommand();
 
-            cmd.CommandText = @"
-                SELECT table_name
-                FROM information_schema.tables
-                WHERE table_name IN (
-                    SELECT table_name
-                    FROM pg_description
-                    WHERE objsubid = 0 AND description ILIKE @kmFilter
-                )
-                AND table_schema = @schema
-                AND table_type = 'BASE TABLE';
-                ";
-
-            cmd.Parameters.AddWithValue("@kmFilter", PostgresSchema.TableComment);
+            cmd.CommandText = @"SELECT table_name FROM information_schema.tables
+                                WHERE table_schema = @schema AND table_type = 'BASE TABLE';";
             cmd.Parameters.AddWithValue("@schema", this._schema);
 
             using NpgsqlDataReader dataReader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             while (await dataReader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                yield return dataReader.GetString(dataReader.GetOrdinal("table_name"));
+                var tableNameWithPrefix = dataReader.GetString(dataReader.GetOrdinal("table_name"));
+                if (tableNameWithPrefix.StartsWith(this._tableNamePrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return tableNameWithPrefix.Remove(0, this._tableNamePrefix.Length);
+                }
             }
         }
     }
@@ -144,10 +148,13 @@ internal sealed class PostgresDbClient : IDisposable
     /// <summary>
     /// Delete a table.
     /// </summary>
-    /// <param name="tableName">The name assigned to a table of entries.</param>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
-    public async Task DeleteTableAsync(string tableName, CancellationToken cancellationToken = default)
+    /// <param name="tableName">Name of the table to delete</param>
+    /// <param name="cancellationToken">Async task cancellation token.</param>
+    public async Task DeleteTableAsync(
+        string tableName,
+        CancellationToken cancellationToken = default)
     {
+        tableName = this.WithSchemaAndTableNamePrefix(tableName);
         NpgsqlConnection connection = await this._dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
         await using (connection)
@@ -155,7 +162,7 @@ internal sealed class PostgresDbClient : IDisposable
             using NpgsqlCommand cmd = connection.CreateCommand();
 
 #pragma warning disable CA2100 // SQL reviewed
-            cmd.CommandText = $"DROP TABLE IF EXISTS {this.GetFullTableName(tableName)}";
+            cmd.CommandText = $"DROP TABLE IF EXISTS {tableName}";
 #pragma warning restore CA2100
 
             await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -183,6 +190,8 @@ internal sealed class PostgresDbClient : IDisposable
         DateTimeOffset? lastUpdate = null,
         CancellationToken cancellationToken = default)
     {
+        tableName = this.WithSchemaAndTableNamePrefix(tableName);
+
         const string EmptyPayload = "{}";
         const string EmptyContent = "";
         string[] emptyTags = Array.Empty<string>();
@@ -195,7 +204,7 @@ internal sealed class PostgresDbClient : IDisposable
 
 #pragma warning disable CA2100 // SQL reviewed
             cmd.CommandText = $@"
-                INSERT INTO {this.GetFullTableName(tableName)}
+                INSERT INTO {tableName}
                     ({PostgresSchema.FieldsId},{PostgresSchema.FieldsEmbedding},{PostgresSchema.FieldsTags},
                      {PostgresSchema.FieldsContent},{PostgresSchema.FieldsPayload},{PostgresSchema.FieldsUpdatedAt})
                     VALUES
@@ -233,6 +242,8 @@ internal sealed class PostgresDbClient : IDisposable
         string id,
         CancellationToken cancellationToken = default)
     {
+        tableName = this.WithSchemaAndTableNamePrefix(tableName);
+
         NpgsqlConnection connection = await this._dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
         await using (connection)
@@ -240,11 +251,7 @@ internal sealed class PostgresDbClient : IDisposable
             using NpgsqlCommand cmd = connection.CreateCommand();
 
 #pragma warning disable CA2100 // SQL reviewed
-            cmd.CommandText = $@"
-                DELETE FROM {this.GetFullTableName(tableName)}
-                       WHERE {PostgresSchema.FieldsId}=@id
-            ";
-
+            cmd.CommandText = $"DELETE FROM {tableName} WHERE {PostgresSchema.FieldsId}=@id";
             cmd.Parameters.AddWithValue("@id", id);
 #pragma warning restore CA2100
 
@@ -276,11 +283,16 @@ internal sealed class PostgresDbClient : IDisposable
     /// </summary>
     /// <param name="tableName"></param>
     /// <returns>Valid table name including schema</returns>
-    private string GetFullTableName(string tableName)
+    private string WithSchemaAndTableNamePrefix(string tableName)
     {
-        // Redundant, but better checking twice since we don't have test coverage yet
+        tableName = this.WithTableNamePrefix(tableName);
         PostgresSchema.ValidateTableName(tableName);
 
         return $"{this._schema}.\"{tableName}\"";
+    }
+
+    private string WithTableNamePrefix(string tableName)
+    {
+        return $"{this._tableNamePrefix}{tableName}";
     }
 }
