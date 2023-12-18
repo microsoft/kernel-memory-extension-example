@@ -15,6 +15,7 @@ internal class Program
         await Test1();
         await Test2();
         await Test3();
+        await Test4();
     }
 
     private static async Task Test1()
@@ -170,6 +171,84 @@ internal class Program
         answer = await memory.AskAsync("what color should I choose, and why?");
         Console.WriteLine(answer.Result);
 
+        await memory.DeleteIndexAsync();
+    }
+
+    private static async Task Test4()
+    {
+        var postgresConfig = new PostgresConfig();
+        var azureOpenAIEmbeddingConfig = new AzureOpenAIConfig();
+        var azureOpenAITextConfig = new AzureOpenAIConfig();
+
+        new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .AddJsonFile("appsettings.Development.json", optional: true)
+            .Build()
+            .BindSection("KernelMemory:Services:Postgres", postgresConfig)
+            .BindSection("KernelMemory:Services:AzureOpenAIEmbedding", azureOpenAIEmbeddingConfig)
+            .BindSection("KernelMemory:Services:AzureOpenAIText", azureOpenAITextConfig);
+
+        var memory = new KernelMemoryBuilder()
+            .WithPostgres(postgresConfig)
+            .WithAzureOpenAITextGeneration(azureOpenAITextConfig)
+            .WithAzureOpenAITextEmbeddingGeneration(azureOpenAIEmbeddingConfig)
+            .WithSimpleFileStorage(new SimpleFileStorageConfig { StorageType = FileSystemTypes.Disk, Directory = "_files" })
+            .Build();
+
+        await memory.ImportTextAsync("green is a great color", documentId: "1", tags: new TagCollection { { "user", "hulk" } });
+        await memory.ImportTextAsync("red is a great color", documentId: "2", tags: new TagCollection { { "user", "flash" } });
+
+        const string q = "in one or two words, what colors should I choose?";
+
+        var answer = await memory.AskAsync(q, filter: MemoryFilters.ByDocument("1"));
+        Console.WriteLine("green: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filter: MemoryFilters.ByDocument("1").ByTag("user", "hulk"));
+        Console.WriteLine("green: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filter: MemoryFilters.ByDocument("1").ByTag("user", "flash"));
+        Console.WriteLine("none: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filter: MemoryFilters.ByDocument("2"));
+        Console.WriteLine("red: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filter: MemoryFilters.ByDocument("2").ByTag("user", "hulk"));
+        Console.WriteLine("none: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filter: MemoryFilters.ByDocument("2").ByTag("user", "flash"));
+        Console.WriteLine("red: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filter: MemoryFilters.ByTag("user", "hulk"));
+        Console.WriteLine("green: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filter: MemoryFilters.ByTag("user", "flash"));
+        Console.WriteLine("red: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filter: MemoryFilters.ByTag("user", "x"));
+        Console.WriteLine("none: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filters: new[] { MemoryFilters.ByTag("user", "x"), MemoryFilters.ByTag("user", "hulk") });
+        Console.WriteLine("green: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filters: new[] { MemoryFilters.ByTag("user", "x"), MemoryFilters.ByTag("user", "flash") });
+        Console.WriteLine("red: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        answer = await memory.AskAsync(q, filters: new[] { MemoryFilters.ByTag("user", "hulk"), MemoryFilters.ByTag("user", "flash") });
+        Console.WriteLine("green and red: " + answer.Result);
+        foreach (var p in answer.RelevantSources.SelectMany(s => s.Partitions)) { Console.WriteLine(" - " + p.Text); }
+
+        Console.WriteLine("\n\n\n");
         await memory.DeleteIndexAsync();
     }
 }
