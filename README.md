@@ -1,12 +1,14 @@
-# Kernel Memory with Postgres
+# Kernel Memory with Postgres + pgvector
 
 [//]: # ([![Nuget package]&#40;https://img.shields.io/nuget/vpre/Microsoft.KernelMemory.Postgres&#41;]&#40;https://www.nuget.org/packages/Microsoft.KernelMemory.Postgres/&#41;)
-[![License: MIT](https://img.shields.io/github/license/microsoft/kernel-memory)](https://github.com/microsoft/kernel-memory/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/github/license/microsoft/kernel-memory-postgres)](https://github.com/microsoft/kernel-memory-postgres/blob/main/LICENSE)
 [![Discord](https://img.shields.io/discord/1063152441819942922?label=Discord&logo=discord&logoColor=white&color=d82679)](https://aka.ms/SKDiscord)
 
 **[Kernel Memory](https://github.com/microsoft/semantic-memory)** (KM)
-is an open-source service and plugin specialized in the efficient indexing of datasets
-through custom continuous data hybrid pipelines.
+is an open-source service specialized in Retrieval Augmented Generation (RAG)
+and the efficient indexing of datasets through custom continuous data hybrid pipelines.
+KM offers also a plugin for Semantic Kernel and OpenAPI wev service for maximum ease
+of integration and compatibility.
 
 This repository contains the Postgres adapter allowing to use Kernel Memory with Postgres.
 
@@ -120,9 +122,9 @@ Also:
   "KernelMemory": {
     "Services": {
       "Postgres": {
-        
+
         "TableNamePrefix": "memory_",
-        
+
         "Columns": {
           "id":        "_pk",
           "embedding": "embedding",
@@ -130,7 +132,7 @@ Also:
           "content":   "chunk",
           "payload":   "extras"
         },
-        
+
         "CreateTableSql": [
           "BEGIN;                                                                     ",
           "CREATE TABLE IF NOT EXISTS %%tableName%% (                                 ",
@@ -146,9 +148,9 @@ Also:
           "CREATE INDEX ON %%tableName%% USING ivfflat (embedding vector_cosine_ops); ",
           "COMMIT;                                                                    "
         ]
-        
+
       }
     }
   }
 }
-```CREATE INDEX ON %%tableName%% USING hnsw (vector vector_cosine_ops);
+```
