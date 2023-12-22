@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -55,7 +55,8 @@ public class PostgresConfig
     /// Mandatory prefix to add to tables created by KM.
     /// This is used to distinguish KM tables from others in the same schema.
     /// </summary>
-    public string TableNamePrefix { get; set; } = string.Empty;
+    /// <remarks>Default value is set to "km_" but can be override when creating a config.</remarks>
+    public string TableNamePrefix { get; set; } = "km_";
 
     /// <summary>
     /// Configurable column names used with Postgres
