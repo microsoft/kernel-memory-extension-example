@@ -42,6 +42,11 @@ public class PostgresConfig
     public const string DefaultSchema = "public";
 
     /// <summary>
+    /// Default prefix used for table names
+    /// </summary>
+    public const string DefaultTableNamePrefix = "km_";
+
+    /// <summary>
     /// Connection string required to connect to Postgres
     /// </summary>
     public string ConnectionString { get; set; } = string.Empty;
@@ -55,7 +60,7 @@ public class PostgresConfig
     /// Mandatory prefix to add to tables created by KM.
     /// This is used to distinguish KM tables from others in the same schema.
     /// </summary>
-    public string TableNamePrefix { get; set; } = string.Empty;
+    public string TableNamePrefix { get; set; } = DefaultTableNamePrefix;
 
     /// <summary>
     /// Configurable column names used with Postgres
