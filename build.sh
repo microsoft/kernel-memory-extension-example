@@ -48,6 +48,6 @@ mv bin/Release/*.snupkg ${ROOT}/packages/
 # Repo clean up
 echo "---- Cleaning up the repository builds"
 cd "${ROOT}"
-rm -fR TestApplication/bin TestApplication/obj
+rm -fR tests/TestApplication/bin tests/TestApplication/obj
 dotnet clean --nologo -v m -c Debug
 dotnet clean --nologo -v m -c Release

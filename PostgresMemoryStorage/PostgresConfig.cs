@@ -69,33 +69,39 @@ public class PostgresConfig
     public Dictionary<string, string> Columns { get; set; }
 
     /// <summary>
-    /// Placeholder used in CreateTableSql
+    /// Mandatory placeholder required in CreateTableSql
     /// </summary>
-    public const string SqlPlaceholdersTableName = "%%tableName%%";
+    public const string SqlPlaceholdersTableName = "%%table_name%%";
 
     /// <summary>
-    /// Placeholder used in CreateTableSql
+    /// Mandatory placeholder required in CreateTableSql
     /// </summary>
-    public const string SqlPlaceholdersVectorSize = "%%vectorSize%%";
+    public const string SqlPlaceholdersVectorSize = "%%vector_size%%";
+
+    /// <summary>
+    /// Optional placeholder required in CreateTableSql
+    /// </summary>
+    public const string SqlPlaceholdersLockId = "%%lock_id%%";
 
     /// <summary>
     /// Optional, custom SQL statements for creating new tables, in case
     /// you need to add custom columns, indexing, etc.
-    /// The SQL must contain two placeholders: %%tableName%% and %%vectorSize%%.
+    /// The SQL must contain two placeholders: %%table_name%% and %%vector_size%%.
     /// You can put the SQL in one line or split it over multiple lines for
     /// readability. Lines are automatically merged with a new line char.
     /// Example:
     ///   BEGIN;
-    ///   CREATE TABLE IF NOT EXISTS %%tableName%% (
+    ///   "SELECT pg_advisory_xact_lock(%%lock_id%%);
+    ///   CREATE TABLE IF NOT EXISTS %%table_name%% (
     ///     id           TEXT NOT NULL PRIMARY KEY,
-    ///     embedding    vector(%%vectorSize%%),
+    ///     embedding    vector(%%vector_size%%),
     ///     tags         TEXT[] DEFAULT '{}'::TEXT[] NOT NULL,
     ///     content      TEXT DEFAULT '' NOT NULL,
     ///     payload      JSONB DEFAULT '{}'::JSONB NOT NULL,
     ///     some_text    TEXT DEFAULT '',
     ///     last_update  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
     ///   );
-    ///   CREATE INDEX IF NOT EXISTS idx_tags ON %%tableName%% USING GIN(tags);
+    ///   CREATE INDEX IF NOT EXISTS idx_tags ON %%table_name%% USING GIN(tags);
     ///   COMMIT;
     /// </summary>
     public List<string> CreateTableSql { get; set; } = new();

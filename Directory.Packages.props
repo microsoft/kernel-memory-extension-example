@@ -5,6 +5,7 @@
   <ItemGroup>
     <PackageVersion Include="Microsoft.KernelMemory.Abstractions" Version="0.23.231221.1" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.KernelMemory.Core" Version="0.23.231221.1" />
     <PackageVersion Include="Pgvector" Version="0.2.0" />
   </ItemGroup>
   <!-- Sources -->
@@ -26,8 +27,11 @@
     <PackageVersion Include="Xunit.DependencyInjection" Version="8.9.0" />
     <PackageVersion Include="Xunit.DependencyInjection.Logging" Version="8.1.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
-    <PackageVersion Include="xunit" Version="2.6.2" />
+    <PackageVersion Include="xunit" Version="2.6.3" />
     <PackageVersion Include="xunit.abstractions" Version="2.0.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.4" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageVersion>
   </ItemGroup>
 </Project>

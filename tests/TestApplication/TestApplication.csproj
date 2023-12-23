@@ -12,15 +12,8 @@
 
     <ItemGroup>
         <!-- This packages is built locally for demo purpose, see nuget.config -->
-        <PackageReference Include="Microsoft.KernelMemory.Postgres" Version="0.1.0"/>
-    </ItemGroup>
-
-<!--    <ItemGroup>-->
-<!--        <ProjectReference Include="..\PostgresMemoryStorage\PostgresMemoryStorage.csproj"/>-->
-<!--    </ItemGroup>-->
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.KernelMemory.Core" Version="0.23.231221.1" />
+        <PackageReference Include="Microsoft.KernelMemory.Postgres" Version="0.2.0"/>
+        <PackageReference Include="Microsoft.KernelMemory.Core" Version="0.23.231221.1"/>
     </ItemGroup>
 
     <ItemGroup>
