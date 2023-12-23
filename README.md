@@ -16,11 +16,11 @@ This repository contains the Postgres adapter allowing to use Kernel Memory with
 > Your Postgres instance must support vectors. You can run this SQL to see the list of
 > extensions **installed** and **enabled**:
 >
->     `SELECT * FROM pg_extension`
+>     SELECT * FROM pg_extension
 >
 > To enable the extension this should suffice:
 >
->     `CREATE EXTENSION vector`
+>     CREATE EXTENSION vector
 >
 > For more information, check:
 > * [Using pgvector on Azure PostgreSQL](https://learn.microsoft.com/azure/postgresql/flexible-server/how-to-use-pgvector)
