@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -99,6 +100,12 @@ public class PostgresMemory : IMemoryDb, IDisposable
         CancellationToken cancellationToken = default)
     {
         index = NormalizeIndexName(index);
+        if (string.Equals(index, Constants.DefaultIndex, StringComparison.OrdinalIgnoreCase))
+        {
+            this._log.LogWarning("The default index cannot be deleted");
+            return;
+        }
+
         try
         {
             await this._db.DeleteTableAsync(index, cancellationToken).ConfigureAwait(false);
@@ -223,16 +230,21 @@ public class PostgresMemory : IMemoryDb, IDisposable
 
     #region private ================================================================================
 
+    // Note: "-" is allowed in Postgres, but we normalize it to "_" for consistency with other DBs
+    private static readonly Regex s_replaceIndexNameCharsRegex = new(@"[\s|\\|/|.|\-|:]");
+
     private static string NormalizeIndexName(string index)
     {
-        PostgresSchema.ValidateTableName(index);
-
         if (string.IsNullOrWhiteSpace(index))
         {
             index = Constants.DefaultIndex;
         }
 
-        return index.Trim();
+        index = s_replaceIndexNameCharsRegex.Replace(index.Trim().ToLowerInvariant(), "_");
+
+        PostgresSchema.ValidateTableName(index);
+
+        return index;
     }
 
     private (string sql, Dictionary<string, object> unsafeSqlUserValues) PrepareSql(
