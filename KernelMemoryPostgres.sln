@@ -14,17 +14,23 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "root", "root", "{6EF76FD8-4
 		.editorconfig = .editorconfig
 		Directory.Build.props = Directory.Build.props
 		Directory.Packages.props = Directory.Packages.props
-		nuget.config = nuget.config
 		icon.png = icon.png
 		code-analysis.props = code-analysis.props
 		nuget-package.props = nuget-package.props
 		NUGET.md = NUGET.md
 		build.sh = build.sh
+		nuget.config = nuget.config
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostgresMemoryStorage", "PostgresMemoryStorage\PostgresMemoryStorage.csproj", "{239A6E9B-614F-4A17-9DBA-DAB54F89C703}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApplication", "TestApplication\TestApplication.csproj", "{544885A6-C88E-4AAC-BDD9-FA915F97EA40}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApplication", "tests\TestApplication\TestApplication.csproj", "{544885A6-C88E-4AAC-BDD9-FA915F97EA40}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{00E9AC21-A2C0-4247-95D6-74E38817F5BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "tests\UnitTests\UnitTests.csproj", "{DAE58510-C22A-43D4-AD32-68498C6A9E66}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunctionalTests", "tests\FunctionalTests\FunctionalTests.csproj", "{8DC06B89-DD48-498F-95DE-82CCC657C63D}"
 EndProject
 
 
@@ -34,6 +40,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{544885A6-C88E-4AAC-BDD9-FA915F97EA40} = {00E9AC21-A2C0-4247-95D6-74E38817F5BD}
+		{DAE58510-C22A-43D4-AD32-68498C6A9E66} = {00E9AC21-A2C0-4247-95D6-74E38817F5BD}
+		{8DC06B89-DD48-498F-95DE-82CCC657C63D} = {00E9AC21-A2C0-4247-95D6-74E38817F5BD}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{239A6E9B-614F-4A17-9DBA-DAB54F89C703}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -44,5 +53,13 @@ Global
 		{544885A6-C88E-4AAC-BDD9-FA915F97EA40}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{544885A6-C88E-4AAC-BDD9-FA915F97EA40}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{544885A6-C88E-4AAC-BDD9-FA915F97EA40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DAE58510-C22A-43D4-AD32-68498C6A9E66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DAE58510-C22A-43D4-AD32-68498C6A9E66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DAE58510-C22A-43D4-AD32-68498C6A9E66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DAE58510-C22A-43D4-AD32-68498C6A9E66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DC06B89-DD48-498F-95DE-82CCC657C63D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DC06B89-DD48-498F-95DE-82CCC657C63D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DC06B89-DD48-498F-95DE-82CCC657C63D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DC06B89-DD48-498F-95DE-82CCC657C63D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

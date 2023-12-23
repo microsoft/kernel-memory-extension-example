@@ -44,7 +44,7 @@ public class PostgresMemory : IMemoryDb, IDisposable
             throw new PostgresException("Embedding generator not configured");
         }
 
-        this._db = new PostgresDbClient(config);
+        this._db = new PostgresDbClient(config, this._log);
     }
 
     /// <inheritdoc />
@@ -55,12 +55,20 @@ public class PostgresMemory : IMemoryDb, IDisposable
     {
         index = NormalizeIndexName(index);
 
-        if (await this._db.DoesTableExistsAsync(index, cancellationToken).ConfigureAwait(false))
+        try
         {
-            return;
-        }
+            if (await this._db.DoesTableExistAsync(index, cancellationToken).ConfigureAwait(false))
+            {
+                return;
+            }
 
-        await this._db.CreateTableAsync(index, vectorSize, cancellationToken).ConfigureAwait(false);
+            await this._db.CreateTableAsync(index, vectorSize, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            this._log.LogError(e, "DB error while attempting to create index");
+            throw;
+        }
     }
 
     /// <inheritdoc />
@@ -68,10 +76,18 @@ public class PostgresMemory : IMemoryDb, IDisposable
         CancellationToken cancellationToken = default)
     {
         var result = new List<string>();
-        var tables = this._db.GetTablesAsync(cancellationToken).ConfigureAwait(false);
-        await foreach (string name in tables)
+        try
         {
-            result.Add(name);
+            var tables = this._db.GetTablesAsync(cancellationToken).ConfigureAwait(false);
+            await foreach (string name in tables)
+            {
+                result.Add(name);
+            }
+        }
+        catch (Exception e)
+        {
+            this._log.LogError(e, "DB error while fetching the list of indexes");
+            throw;
         }
 
         return result;
@@ -83,7 +99,15 @@ public class PostgresMemory : IMemoryDb, IDisposable
         CancellationToken cancellationToken = default)
     {
         index = NormalizeIndexName(index);
-        await this._db.DeleteTableAsync(index, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await this._db.DeleteTableAsync(index, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            this._log.LogError(e, "DB error while deleting index");
+            throw;
+        }
     }
 
     /// <inheritdoc />
@@ -94,11 +118,18 @@ public class PostgresMemory : IMemoryDb, IDisposable
     {
         index = NormalizeIndexName(index);
 
-        await this._db.UpsertAsync(
-            tableName: index,
-            PostgresMemoryRecord.FromMemoryRecord(record),
-            lastUpdate: DateTimeOffset.UtcNow,
-            cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await this._db.UpsertAsync(
+                tableName: index,
+                PostgresMemoryRecord.FromMemoryRecord(record),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            this._log.LogError(e, "DB error upserting record");
+            throw;
+        }
 
         return record.Id;
     }

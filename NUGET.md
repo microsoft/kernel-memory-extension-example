@@ -61,14 +61,14 @@ SQL used to create tables via configuration.
 > and uses **less memory** than HNSW, but has **lower query performance**
 > (in terms of speed-recall tradeoff).
 
-SQL to add IVFFlat: `CREATE INDEX ON %%tableName%% USING ivfflat (embedding vector_cosine_ops) WITH (lists = 1000);`
+SQL to add IVFFlat: `CREATE INDEX ON %%table_name%% USING ivfflat (embedding vector_cosine_ops) WITH (lists = 1000);`
 
 > An **HNSW** index creates a multilayer graph. It has **slower build times**
 > and uses **more memory** than IVFFlat, but has **better query performance**
 > (in terms of speed-recall tradeoff). There’s no training step like IVFFlat,
 > so the index can be created without any data in the table.
 
-SQL to add HNSW: `CREATE INDEX ON %%tableName%% USING hnsw (embedding vector_cosine_ops);`
+SQL to add HNSW: `CREATE INDEX ON %%table_name%% USING hnsw (embedding vector_cosine_ops);`
 
 See https://github.com/pgvector/pgvector for more information.
 
@@ -99,8 +99,8 @@ the table schema is customized, with custom names and additional fields.
 
 The SQL statement requires two special **placeholders**:
 
-* `%%tableName%%`: replaced at runtime with the table name
-* `%%vectorSize%%`: replaced at runtime with the embedding vectors size
+* `%%table_name%%`: replaced at runtime with the table name
+* `%%vector_size%%`: replaced at runtime with the embedding vectors size
 
 Also:
 
@@ -128,17 +128,17 @@ Also:
 
         "CreateTableSql": [
           "BEGIN;                                                                     ",
-          "CREATE TABLE IF NOT EXISTS %%tableName%% (                                 ",
+          "CREATE TABLE IF NOT EXISTS %%table_name%% (                                 ",
           "  _pk         TEXT NOT NULL PRIMARY KEY,                                   ",
-          "  embedding   vector(%%vectorSize%%),                                      ",
+          "  embedding   vector(%%vector_size%%),                                      ",
           "  labels      TEXT[] DEFAULT '{}'::TEXT[] NOT NULL,                        ",
           "  chunk       TEXT DEFAULT '' NOT NULL,                                    ",
           "  extras      JSONB DEFAULT '{}'::JSONB NOT NULL,                          ",
           "  my_field1   TEXT DEFAULT '',                                             ",
           "  _update     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP           ",
           ");                                                                         ",
-          "CREATE INDEX ON %%tableName%% USING GIN(labels);                           ",
-          "CREATE INDEX ON %%tableName%% USING ivfflat (embedding vector_cosine_ops); ",
+          "CREATE INDEX ON %%table_name%% USING GIN(labels);                           ",
+          "CREATE INDEX ON %%table_name%% USING ivfflat (embedding vector_cosine_ops); ",
           "COMMIT;                                                                    "
         ]
 

@@ -12,13 +12,28 @@ of integration and compatibility.
 
 This repository contains the Postgres adapter allowing to use Kernel Memory with Postgres.
 
+> [!IMPORTANT]
+> Your Postgres instance must support vectors. You can run this SQL to see the list of
+> extensions **installed** and **enabled**:
+>
+>     `SELECT * FROM pg_extension`
+>
+> To enable the extension this should suffice:
+>
+>     `CREATE EXTENSION vector`
+>
+> For more information, check:
+> * [Using pgvector on Azure PostgreSQL](https://learn.microsoft.com/azure/postgresql/flexible-server/how-to-use-pgvector)
+> * [pg_vector extension documentation](https://github.com/pgvector/pgvector).
+
 To use Postgres with Kernel Memory:
 
-1. Verify your Postgres instance supports vectors, e.g. run `SELECT * FROM pg_extension`
+1. Have a PostgreSQL instance ready, e.g. checkout [Azure Database for PostgreSQL](https://learn.microsoft.com/en-us/azure/postgresql/)
+2. Verify your Postgres instance supports vectors, e.g. run `SELECT * FROM pg_extension`
 
 [//]: # (2. install the [Microsoft.KernelMemory.Postgres]&#40;https://www.nuget.org/packages/Microsoft.KernelMemory.Postgres&#41; package)
 
-2. add to appsettings.json (or appsettings.development.json) Postgres connection string, for example:
+3. Add Postgres connection string to appsettings.json (or appsettings.development.json), for example:
 
     ```json
     {
@@ -31,7 +46,7 @@ To use Postgres with Kernel Memory:
       }
     }
     ```
-3. configure KM builder to store memories in Postgres, for example:
+4. Configure KM builder to store memories in Postgres, for example:
     ```csharp
     // using Microsoft.KernelMemory;
     // using Microsoft.KernelMemory.Postgres;
@@ -63,19 +78,21 @@ Depending on your scenario you might want to create these indexes manually,
 considering precision and performance trade-offs, or you can customize the
 SQL used to create tables via configuration.
 
+> [!NOTE]
 > An **IVFFlat** index divides vectors into lists, and then searches a subset
 > of those lists that are closest to the query vector. It has **faster build times**
 > and uses **less memory** than HNSW, but has **lower query performance**
 > (in terms of speed-recall tradeoff).
 
-SQL to add IVFFlat: `CREATE INDEX ON %%tableName%% USING ivfflat (embedding vector_cosine_ops) WITH (lists = 1000);`
+SQL to add IVFFlat: `CREATE INDEX ON %%table_name%% USING ivfflat (embedding vector_cosine_ops) WITH (lists = 1000);`
 
+> [!NOTE]
 > An **HNSW** index creates a multilayer graph. It has **slower build times**
 > and uses **more memory** than IVFFlat, but has **better query performance**
 > (in terms of speed-recall tradeoff). There’s no training step like IVFFlat,
 > so the index can be created without any data in the table.
 
-SQL to add HNSW: `CREATE INDEX ON %%tableName%% USING hnsw (embedding vector_cosine_ops);`
+SQL to add HNSW: `CREATE INDEX ON %%table_name%% USING hnsw (embedding vector_cosine_ops);`
 
 See https://github.com/pgvector/pgvector for more information.
 
@@ -106,8 +123,14 @@ the table schema is customized, with custom names and additional fields.
 
 The SQL statement requires two special **placeholders**:
 
-* `%%tableName%%`: replaced at runtime with the table name
-* `%%vectorSize%%`: replaced at runtime with the embedding vectors size
+* `%%table_name%%`: replaced at runtime with the table name
+* `%%vector_size%%`: replaced at runtime with the embedding vectors size
+
+There's a third optional placeholder we recommend using, to better handle
+concurrency, e.g. in combinaton with `pg_advisory_xact_lock` (_exclusive transaction
+level advisory locks_):
+
+* `%%lock_id%%`: replaced at runtime with a number
 
 Also:
 
@@ -135,17 +158,18 @@ Also:
 
         "CreateTableSql": [
           "BEGIN;                                                                     ",
-          "CREATE TABLE IF NOT EXISTS %%tableName%% (                                 ",
+          "SELECT pg_advisory_xact_lock(%%lock_id%%);                                  ",
+          "CREATE TABLE IF NOT EXISTS %%table_name%% (                                 ",
           "  _pk         TEXT NOT NULL PRIMARY KEY,                                   ",
-          "  embedding   vector(%%vectorSize%%),                                      ",
+          "  embedding   vector(%%vector_size%%),                                      ",
           "  labels      TEXT[] DEFAULT '{}'::TEXT[] NOT NULL,                        ",
           "  chunk       TEXT DEFAULT '' NOT NULL,                                    ",
           "  extras      JSONB DEFAULT '{}'::JSONB NOT NULL,                          ",
           "  my_field1   TEXT DEFAULT '',                                             ",
           "  _update     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP           ",
           ");                                                                         ",
-          "CREATE INDEX ON %%tableName%% USING GIN(labels);                           ",
-          "CREATE INDEX ON %%tableName%% USING ivfflat (embedding vector_cosine_ops); ",
+          "CREATE INDEX ON %%table_name%% USING GIN(labels);                           ",
+          "CREATE INDEX ON %%table_name%% USING ivfflat (embedding vector_cosine_ops); ",
           "COMMIT;                                                                    "
         ]
 
