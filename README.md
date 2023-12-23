@@ -157,20 +157,20 @@ Also:
         },
 
         "CreateTableSql": [
-          "BEGIN;                                                                     ",
+          "BEGIN;                                                                      ",
           "SELECT pg_advisory_xact_lock(%%lock_id%%);                                  ",
           "CREATE TABLE IF NOT EXISTS %%table_name%% (                                 ",
-          "  _pk         TEXT NOT NULL PRIMARY KEY,                                   ",
+          "  _pk         TEXT NOT NULL PRIMARY KEY,                                    ",
           "  embedding   vector(%%vector_size%%),                                      ",
-          "  labels      TEXT[] DEFAULT '{}'::TEXT[] NOT NULL,                        ",
-          "  chunk       TEXT DEFAULT '' NOT NULL,                                    ",
-          "  extras      JSONB DEFAULT '{}'::JSONB NOT NULL,                          ",
-          "  my_field1   TEXT DEFAULT '',                                             ",
-          "  _update     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP           ",
-          ");                                                                         ",
+          "  labels      TEXT[] DEFAULT '{}'::TEXT[] NOT NULL,                         ",
+          "  chunk       TEXT DEFAULT '' NOT NULL,                                     ",
+          "  extras      JSONB DEFAULT '{}'::JSONB NOT NULL,                           ",
+          "  my_field1   TEXT DEFAULT '',                                              ",
+          "  _update     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP            ",
+          ");                                                                          ",
           "CREATE INDEX ON %%table_name%% USING GIN(labels);                           ",
           "CREATE INDEX ON %%table_name%% USING ivfflat (embedding vector_cosine_ops); ",
-          "COMMIT;                                                                    "
+          "COMMIT;                                                                     "
         ]
 
       }
