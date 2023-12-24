@@ -7,7 +7,7 @@
         <RootNamespace>Microsoft.KernelMemory.Postgres</RootNamespace>
         <IsPackable>true</IsPackable>
         <PackageId>Microsoft.KernelMemory.Postgres</PackageId>
-        <NoWarn>CA1724,NU5104</NoWarn>
+        <NoWarn>CA1724,NU5104,CA1308</NoWarn>
     </PropertyGroup>
 
     <Import Project="../nuget-package.props" />
