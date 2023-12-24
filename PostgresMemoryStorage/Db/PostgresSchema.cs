@@ -8,7 +8,7 @@ internal static class PostgresSchema
 {
     public const string PlaceholdersTags = "{{$tags}}";
 
-    private static readonly Regex s_validNameRegex = new(@"^[a-zA-Z0-9_]+$");
+    private static readonly Regex s_validNameRegex = new(@"^[a-zA-Z0-9\-]+$");
 
     public static void ValidateSchemaName(string name)
     {

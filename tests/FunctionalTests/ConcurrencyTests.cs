@@ -93,8 +93,8 @@ public class ConcurrencyTests : BaseTestCase
     public async Task UpsertConcurrencyTest()
     {
         var concurrency = 20;
-        var indexName = "upsert_test";
         var vectorSize = 4;
+        var indexName = "upsert_test" + Guid.NewGuid().ToString("D");
 
         using var target = new PostgresMemory(this.PostgresConfiguration, new FakeEmbeddingGenerator());
 
