@@ -44,7 +44,7 @@ public class PostgresConfig
     /// <summary>
     /// Default prefix used for table names
     /// </summary>
-    public const string DefaultTableNamePrefix = "km_";
+    public const string DefaultTableNamePrefix = "km-";
 
     /// <summary>
     /// Connection string required to connect to Postgres
@@ -60,7 +60,7 @@ public class PostgresConfig
     /// Mandatory prefix to add to tables created by KM.
     /// This is used to distinguish KM tables from others in the same schema.
     /// </summary>
-    /// <remarks>Default value is set to "km_" but can be override when creating a config.</remarks>
+    /// <remarks>Default value is set to "km-" but can be override when creating a config.</remarks>
     public string TableNamePrefix { get; set; } = DefaultTableNamePrefix;
 
     /// <summary>

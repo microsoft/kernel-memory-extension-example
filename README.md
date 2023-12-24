@@ -103,7 +103,9 @@ DB table for each memory index.
 
 Table names have a configurable **prefix**, used to filter out other tables that
 might be present. The prefix is mandatory, cannot be empty, we suggest using
-the default `km_` prefix.
+the default `km-` prefix. Note that the Postgres connector automatically converts
+`_` underscores to `-` dashes to have a consistent behavior with other storage
+types supported by Kernel Memory.
 
 Overall we recommend not mixing external tables in the same DB used for
 Kernel Memory.

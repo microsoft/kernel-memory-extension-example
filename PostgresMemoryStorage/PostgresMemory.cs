@@ -45,6 +45,9 @@ public class PostgresMemory : IMemoryDb, IDisposable
             throw new PostgresException("Embedding generator not configured");
         }
 
+        // Normalize underscore and check for invalid symbols
+        config.TableNamePrefix = NormalizeTableNamePrefix(config.TableNamePrefix);
+
         this._db = new PostgresDbClient(config, this._log);
     }
 
@@ -230,8 +233,9 @@ public class PostgresMemory : IMemoryDb, IDisposable
 
     #region private ================================================================================
 
-    // Note: "-" is allowed in Postgres, but we normalize it to "_" for consistency with other DBs
-    private static readonly Regex s_replaceIndexNameCharsRegex = new(@"[\s|\\|/|.|\-|:]");
+    // Note: "_" is allowed in Postgres, but we normalize it to "-" for consistency with other DBs
+    private static readonly Regex s_replaceIndexNameCharsRegex = new(@"[\s|\\|/|.|_|:]");
+    private const string ValidSeparator = "-";
 
     private static string NormalizeIndexName(string index)
     {
@@ -240,11 +244,21 @@ public class PostgresMemory : IMemoryDb, IDisposable
             index = Constants.DefaultIndex;
         }
 
-        index = s_replaceIndexNameCharsRegex.Replace(index.Trim().ToLowerInvariant(), "_");
+        index = s_replaceIndexNameCharsRegex.Replace(index.Trim().ToLowerInvariant(), ValidSeparator);
 
         PostgresSchema.ValidateTableName(index);
 
         return index;
+    }
+
+    private static string NormalizeTableNamePrefix(string? name)
+    {
+        if (name == null) { return string.Empty; }
+
+        name = s_replaceIndexNameCharsRegex.Replace(name.Trim().ToLowerInvariant(), ValidSeparator);
+        PostgresSchema.ValidateTableNamePrefix(name);
+
+        return name;
     }
 
     private (string sql, Dictionary<string, object> unsafeSqlUserValues) PrepareSql(
