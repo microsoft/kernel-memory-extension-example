@@ -1,4 +1,4 @@
-# Kernel Memory with <your extension>
+# Kernel Memory with \<your extension>
 
 [![License: MIT](https://img.shields.io/github/license/microsoft/kernel-memory-postgres)](https://github.com/microsoft/kernel-memory-postgres/blob/main/LICENSE)
 [![Discord](https://img.shields.io/discord/1063152441819942922?label=Discord&logo=discord&logoColor=white&color=d82679)](https://aka.ms/KMDiscord)
