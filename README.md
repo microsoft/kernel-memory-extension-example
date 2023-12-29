@@ -9,4 +9,4 @@ In this example, the code shows how to integrate Postgres into KM as a Memory DB
 
 > [!NOTE]
 > The real Postgres extension for Kernel Memory is available
-> [here]().
+> [here](https://github.com/microsoft/kernel-memory/tree/main/extensions/Postgres).
